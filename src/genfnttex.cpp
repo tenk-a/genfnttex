@@ -107,7 +107,7 @@ private:
     int usage() {
     	fprintf(stderr, "usage>%s [-opts] file(s)\n", appname_);
     	fprintf(stderr,
-    	   "       https://github.com/tenk-a/misc/tree/master/genfnttex\n"
+    	   "       https://github.com/tenk-a/genfnttex\n"
     	   " -ttf=[TTFNAME]  ttf font name\n"
     	   " -o=[OUTPUT]     output base name\n"
     	   " -tblname=[NAME] c table var name\n"
