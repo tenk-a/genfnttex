@@ -34,6 +34,7 @@ public:
     	, mul_(1)
     	, bpp_(4)
     	, addascii_(false)
+    	, addspc_(false)
     	, oldTable_(false)
     {
     	makeClut();
@@ -117,6 +118,7 @@ private:
     	   " -mul[N]         input-font-size*N(/N)\n"
     	   " -bpp[N]         bit per pixel. N=1..8\n"
     	   " -addascii       generate 0x21..0x7E\n"
+    	   " -addspc         genetate space(0x20)\n"
     	   " -fontlist       output font name list\n"
     	   " (-oldtable      use old table)\n"
     	);
@@ -166,7 +168,9 @@ private:
     	    if (rangeCheck(bpp_, 1, 8, arg) == false)
     	    	return false;
     	} else if (paramEquLong(p, "-addascii", p)) {
-    	    addascii_ = (*p != '-');
+    	    addascii_	= (*p != '-');
+    	} else if (paramEquLong(p, "-addspc", p)) {
+    	    addspc_ 	= (*p != '-');
     	} else if (paramEquLong(p, "-fontlist", p)) {
     	    FontGetter::printFontInfo();
     	    return true;
@@ -221,6 +225,9 @@ private:
     	    tblname_ = tblNameBuf_;
     	}
 
+    	if (addspc_) {
+   	    	cmap_[0x20] = 0x20;
+		}
     	if (addascii_) {
     	    for (int i = 0x21; i < 0x7F; ++i) {
     	    	cmap_[i] = i;
@@ -555,6 +562,7 @@ private:
     unsigned	mul_;
     unsigned	bpp_;
     bool    	addascii_;
+	bool		addspc_;
     bool    	oldTable_;
     TexBuf  	texs_;
     uint32_t	clut_[256];
