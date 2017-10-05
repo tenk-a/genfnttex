@@ -13,10 +13,12 @@
 
 
 
-FontGetter::FontGetter(char const* ttfname, unsigned fontW, unsigned cellW, unsigned mul, unsigned bpp, unsigned weight, bool italic)
+FontGetter::FontGetter(char const* ttfname, unsigned fontW, unsigned cellW, unsigned cellH
+						, unsigned mul, unsigned bpp, unsigned weight, bool italic)
     : ttfname_(strdup(ttfname ? ttfname : ""))
     , fontW_(fontW)
     , cellW_(cellW)
+    , cellH_(cellH)
     , mul_(mul)
     , bpp_(bpp)
     , tone_(1 << bpp)
@@ -67,7 +69,7 @@ bool FontGetter::get(FontVec& rFonts) {
     HFONT   old_hfont	= (HFONT)::SelectObject( hdc, new_hfont );
 
     for (unsigned no = 0; no < rFonts.size(); ++no) {
-    	rFonts[no].data.resize(cellW_ * cellW_);
+    	rFonts[no].data.resize(cellW_ * cellH_);
     	getFont(hdc, rFonts[no]);
     	adjustFontSize(rFonts[no]);
     }
@@ -134,8 +136,8 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     	offset_x = int(cellW_) - dw;
     if (offset_x < 0)
     	offset_x = 0;
-    if (offset_y + dh > int(cellW_))
-    	offset_y = int(cellW_) - dh;
+    if (offset_y + dh > int(cellH_))
+    	offset_y = int(cellH_) - dh;
     if (offset_y < 0)
     	offset_y = 0;
 
@@ -147,7 +149,7 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
 			if (fontW > cellW_)
 				fontW = cellW_;
 		}
-    	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellW_ && j < fontH; ++j ) {
+    	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellH_ && j < fontH; ++j ) {
     	    for ( unsigned i = 0 ; i < unsigned(dw) && i < cellW_ && i < fontW; ++i ) {
     	    	unsigned alp  = wkBuf_[j * pitch + i];
     	    	alp   = (alp * (tone_-1) ) / 64;
@@ -160,7 +162,7 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
 			if (fontW > cellW_)
 				fontW = cellW_;
 		}
-    	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellW_ && j < fontH; ++j ) {
+    	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellH_ && j < fontH; ++j ) {
     	    for ( unsigned i = 0 ; i < unsigned(dw) && i < cellW_ && i < fontW; ++i ) {
     	    	unsigned total = 0;
     	    	for(unsigned y = 0 ; y < mul_ && y+(j*mul_) < gm.gmBlackBoxY ; ++y) {
@@ -181,11 +183,11 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
  */
 bool FontGetter::adjustFontSize(Font& rFont) {
     unsigned x0 = cellW_;
-    unsigned y0 = cellW_;
+    unsigned y0 = cellH_;
     unsigned x1 = 0;
     unsigned y1 = 0;
     unsigned w	= cellW_;
-    unsigned h	= cellW_;
+    unsigned h	= cellH_;
     for (unsigned y = 0; y < h; ++y) {
     	for (unsigned x = 0; x < w; ++x) {
     	    unsigned c = rFont.data[y * w + x];
@@ -197,11 +199,11 @@ bool FontGetter::adjustFontSize(Font& rFont) {
     	    }
     	}
     }
-    if (x0 == cellW_ && y0 == cellW_ && x1 == 0 && y1 == 0) {
+    if (x0 == cellW_ && y0 == cellH_ && x1 == 0 && y1 == 0) {
     	rFont.x = 0;
     	rFont.y = 0;
     	rFont.w = cellW_;
-    	rFont.h = cellW_;
+    	rFont.h = cellH_;
     	return	false;
     }
     w = 1+x1-x0;
@@ -252,7 +254,7 @@ static int CALLBACK enumFontFamExProc(
 void FontGetter::printFontInfo() {
     LOGFONTW	logfont = {0};
     logfont.lfCharSet	= DEFAULT_CHARSET;
-    HDC     hdc     	= ::CreateCompatibleDC(NULL);
+    HDC			hdc     = ::CreateCompatibleDC(NULL);
 
     FontNames	fntNames;
     EnumFontFamiliesExW(
