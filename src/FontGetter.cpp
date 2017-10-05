@@ -13,10 +13,19 @@
 
 
 
-FontGetter::FontGetter(char const* ttfname, unsigned fontW, unsigned cellW, unsigned mul, unsigned bpp)
-    : ttfname_(strdup(ttfname ? ttfname : "")), fontW_(fontW), cellW_(cellW), mul_(mul), bpp_(bpp), tone_(1 << bpp)
+FontGetter::FontGetter(char const* ttfname, unsigned fontW, unsigned cellW, unsigned mul, unsigned bpp, unsigned weight, bool italic)
+    : ttfname_(strdup(ttfname ? ttfname : ""))
+    , fontW_(fontW)
+    , cellW_(cellW)
+    , mul_(mul)
+    , bpp_(bpp)
+    , tone_(1 << bpp)
+    , weight_(weight)	// 0..9
+    , italic_(italic)
 {
     assert(1 <= bpp && bpp <= 8);
+    if (mul_ == 0)
+    	mul_ = 1;
 }
 
 FontGetter::~FontGetter() {
@@ -32,8 +41,8 @@ bool FontGetter::get(FontVec& rFonts) {
     logfont.lfWidth 	    	= 0;	    	    	    // フォントの幅（平均）
     logfont.lfEscapement    	= 0;	    	    	    // 文字送り方向の角度
     logfont.lfOrientation   	= 0;	    	    	    // ベースラインの角度
-    logfont.lfWeight	    	= FW_DONTCARE;	    	    // フォントの太さ
-    logfont.lfItalic	    	= FALSE;    	    	    // 斜体にするかどうか
+    logfont.lfWeight	    	= (weight_) ? weight_*100 : FW_DONTCARE;	// フォントの太さ
+    logfont.lfItalic	    	= (italic_) ? TRUE : FALSE; // 斜体にするかどうか
     logfont.lfUnderline     	= FALSE;    	    	    // 下線を付けるかどうか
     logfont.lfStrikeOut     	= FALSE;    	    	    // 取り消し線を付けるかどうか
     //logfont.lfCharSet     	= SHIFTJIS_CHARSET; 	    // 文字セットの識別子
@@ -130,17 +139,29 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     if (offset_y < 0)
     	offset_y = 0;
 
+	unsigned fontH = fontW_;
+	unsigned fontW = fontW_;
     if (mul_ == 1) {
-    	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellW_ && j < fontW_; ++j ) {
-    	    for ( unsigned i = 0 ; i < unsigned(dw) && i < cellW_ && i < fontW_; ++i ) {
+		if (fontW < pitch) {
+			fontW = pitch;
+			if (fontW > cellW_)
+				fontW = cellW_;
+		}
+    	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellW_ && j < fontH; ++j ) {
+    	    for ( unsigned i = 0 ; i < unsigned(dw) && i < cellW_ && i < fontW; ++i ) {
     	    	unsigned alp  = wkBuf_[j * pitch + i];
     	    	alp   = (alp * (tone_-1) ) / 64;
     	    	font.data[((j+offset_y) * cellW_) + (i + offset_x)]   = alp;
     	    }
     	}
     }else {
-    	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellW_ && j < fontW_; ++j ) {
-    	    for ( unsigned i = 0 ; i < unsigned(dw) && i < cellW_ && i < fontW_; ++i ) {
+		if (fontW < pitch/mul_) {
+			fontW = pitch/mul_;
+			if (fontW > cellW_)
+				fontW = cellW_;
+		}
+    	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellW_ && j < fontH; ++j ) {
+    	    for ( unsigned i = 0 ; i < unsigned(dw) && i < cellW_ && i < fontW; ++i ) {
     	    	unsigned total = 0;
     	    	for(unsigned y = 0 ; y < mul_ && y+(j*mul_) < gm.gmBlackBoxY ; ++y) {
     	    	    for(unsigned x = 0 ; x < mul_ && x+(i*mul_) < gm.gmBlackBoxX ; ++x) {

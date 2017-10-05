@@ -36,6 +36,8 @@ public:
     	, addascii_(false)
     	, addspc_(false)
     	, oldTable_(false)
+    	, weight_(0)
+    	, italic_(false)
     {
     	makeClut();
     	//mbs_setEnv("ja_JP.UTF-8");
@@ -173,7 +175,14 @@ private:
     	    addspc_ 	= (*p != '-');
     	} else if (paramEquLong(p, "-fontlist", p)) {
     	    FontGetter::printFontInfo();
-    	    return true;
+    	} else if (paramEquLong(p, "-weight", p)) {
+    	    if (*p == '=')
+    	    	++p;
+    	    weight_	= (unsigned)strtoul(p, (char**)&p, 0);
+    	    if (rangeCheck(weight_, 0, 9, arg) == false)
+    	    	return false;
+    	} else if (paramEquLong(p, "-italic", p)) {
+    	    italic_	= (*p != '-');
     	} else {
     	    fprintf(stderr, "unkown option : %s\n", arg);
     	    return false;
@@ -274,7 +283,7 @@ private:
     	    ++no;
     	}
 
-    	FontGetter fontGetter(ttfname_, fontW_, cellW_, mul_, bpp_);
+    	FontGetter fontGetter(ttfname_, fontW_, cellW_, mul_, bpp_, weight_, italic_);
     	fontGetter.get(fonts_);
     	return true;
     }
@@ -564,6 +573,8 @@ private:
     bool    	addascii_;
 	bool		addspc_;
     bool    	oldTable_;
+    unsigned	weight_;
+    bool		italic_;
     TexBuf  	texs_;
     uint32_t	clut_[256];
 
