@@ -28,6 +28,6 @@ usage>genfnttex [-opts] file(s)
 
 ■ その他
 
-二条項BSDライセンス
+Boost Software License - Version 1.0
 
                                Masashi KITAMURA (tenka@6809.net)
