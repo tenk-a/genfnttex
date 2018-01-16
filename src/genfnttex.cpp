@@ -36,6 +36,7 @@ public:
     	, bpp_(4)
     	, addascii_(false)
     	, addspc_(false)
+    	, addcr_(false)
     	, oldTable_(false)
     	, weight_(0)
     	, italic_(false)
@@ -87,6 +88,12 @@ public:
     	    return 1;
     	if (saveTga() == false)
     	    return 1;
+
+    	//if (addcr_) {
+   	    //	cmap_[0x0a] = 0x0a;
+   	    //	cmap_[0x0d] = 0x0d;
+		//}
+
     	if (oldTable_) {
     	    if (saveOldChFontTableHeader() == false)
     	    	return 1;
@@ -122,6 +129,8 @@ private:
     	   " -bpp[N]         bit per pixel. N=1..8\n"
     	   " -addascii       generate 0x21..0x7E\n"
     	   " -addspc         genetate space(0x20)\n"
+		   " -weight=[N]     1-9:weight(5:standard) 0:default\n"
+		   " -italic         italic\n"
     	   " -fontlist       output font name list\n"
     	   " (-oldtable      use old table)\n"
     	);
@@ -182,6 +191,8 @@ private:
     	    addascii_	= (*p != '-');
     	} else if (paramEquLong(p, "-addspc", p)) {
     	    addspc_ 	= (*p != '-');
+    	} else if (paramEquLong(p, "-addcr", p)) {
+    	    addcr_  	= (*p != '-');
     	} else if (paramEquLong(p, "-fontlist", p)) {
     	    FontGetter::printFontInfo();
     	} else if (paramEquLong(p, "-weight", p)) {
@@ -245,9 +256,13 @@ private:
     	    tblname_ = tblNameBuf_;
     	}
 
-    	if (addspc_) {
+    	if (addspc_ || addcr_) {
    	    	cmap_[0x20] = 0x20;
 		}
+    	//if (addcr_) {
+   	    //	cmap_[0x0a] = 0x0a;
+   	    //	cmap_[0x0d] = 0x0d;
+		//}
     	if (addascii_) {
     	    for (int i = 0x21; i < 0x7F; ++i) {
     	    	cmap_[i] = i;

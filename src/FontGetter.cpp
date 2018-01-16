@@ -89,7 +89,7 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     HDC     	hdc 	= (HDC)hdc0;
     UINT    	nChar	= font.ch;
     TEXTMETRIC	tm  	= {0};
-    GetTextMetrics( hdc, &tm );
+    ::GetTextMetrics( hdc, &tm );
     static MAT2 const mat2 = {
     	{ 0, 1, }, { 0, 0, },
     	{ 0, 0, }, { 0, 1, }
@@ -112,7 +112,7 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     	return false;
     }
 
-    rc = GetTextMetrics( hdc, &tm );
+    rc = ::GetTextMetrics( hdc, &tm );
 
     int pitch	    = (gm.gmBlackBoxX + 3) & ~3;
 
