@@ -123,6 +123,9 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     if (tm.tmInternalLeading != 0) {
     	offset_y    = offset_y - tm.tmDescent;
     }
+    int ox = 0;
+    int oy = 0;
+
     if (offset_y < 0) {
     	offset_y     = 0;
     }
@@ -132,14 +135,22 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     offset_x = (offset_x) / mul_;
     offset_y = (offset_y) / mul_;
 
-    if (offset_x + dw > int(cellW_))
+    if (offset_x + dw > int(cellW_)) {
+		ox       = offset_x + dw - cellW_;
     	offset_x = int(cellW_) - dw;
-    if (offset_x < 0)
+    }
+    if (offset_x < 0) {
+		ox = offset_x;
     	offset_x = 0;
-    if (offset_y + dh > int(cellH_))
+    }
+    if (offset_y + dh > int(cellH_)) {
+		oy       = offset_y + dh - cellH_;
     	offset_y = int(cellH_) - dh;
-    if (offset_y < 0)
+    }
+    if (offset_y < 0) {
+		oy = offset_y;
     	offset_y = 0;
+    }
 
 	unsigned fontH = fontW_;
 	unsigned fontW = fontW_;

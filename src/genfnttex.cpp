@@ -38,8 +38,9 @@ public:
     	, addspc_(false)
     	, addcr_(false)
     	, oldTable_(false)
-    	, weight_(0)
     	, italic_(false)
+    	, weight_(0)
+    	, tbltype_(0)
     {
     	makeClut();
     	//mbs_setEnv("ja_JP.UTF-8");
@@ -599,8 +600,9 @@ private:
     bool    	addascii_;
 	bool		addspc_;
     bool    	oldTable_;
-    unsigned	weight_;
     bool		italic_;
+    unsigned	weight_;
+	int			tbltype_;
     TexBuf  	texs_;
     uint32_t	clut_[256];
 
