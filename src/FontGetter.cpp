@@ -130,6 +130,9 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     	offset_y     = 0;
     }
 
+	font.ox = ox;
+	font.oy = oy;
+
     dw	     = (dw+(mul_-1)) / mul_;
     dh	     = (dh+(mul_-1)) / mul_;
     offset_x = (offset_x) / mul_;

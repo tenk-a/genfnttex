@@ -31,6 +31,8 @@ typedef struct TexChFontInfo {
     unsigned short  y;
     unsigned short  w;
     unsigned short  h;
+    short			ox;
+    short			oy;
 } TexChFontInfo;
 
 #ifdef __cplusplus
@@ -65,7 +67,7 @@ public:
     	return NULL;
     }
 
-    bool charCodeToPageUVWH(unsigned charCode, unsigned& rPage, unsigned& rU, unsigned& rV, unsigned& rW, unsigned& rH) const {
+    bool charCodeToPageUVWH(unsigned charCode, unsigned& rPage, unsigned& rU, unsigned& rV, unsigned& rW, unsigned& rH, int rOX, int rOY) const {
     	TexChFontInfo const* fnd = searchCharCode(charCode);
     	if (!fnd)
     	    return false;
@@ -86,6 +88,8 @@ public:
     	rW    = fnd->w;
     	//rH  = fnd->h;
     	rH    = hdr->fontH;
+    	rOX   = fnd->ox;
+    	rOY   = fnd->oy;
     	return true;
     }
 };
