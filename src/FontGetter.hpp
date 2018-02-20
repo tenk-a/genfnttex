@@ -12,9 +12,16 @@
 #include <stdint.h>
 #include <vector>
 
+struct TexChFontInfo;
+struct TexChFontInfo0;
+
 struct Font {
     Font(uint32_t c=0) : ch(c),x(0),y(0),w(0),h(0),ox(0),oy(0) {}
 
+	void getPara(TexChFontInfo& dst) const;
+	void getPara(TexChFontInfo0& dst) const;
+
+public:
     uint32_t	    	    ch;
     uint32_t	    	    x;
     uint32_t	    	    y;
