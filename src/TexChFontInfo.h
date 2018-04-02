@@ -16,7 +16,9 @@ typedef struct TexChFontInfoHeader {
     unsigned short  texH;
     unsigned short  fontW;
     unsigned short  fontH;
-    short   	    rsv[2];
+    unsigned char   fontBaseW;
+    unsigned char   fontBaseH;
+    short   	    rsv[1];
   #ifdef __cplusplus
     unsigned	    texChW() const { return texW / fontW; }
     unsigned	    texChH() const { return texH / fontH; }

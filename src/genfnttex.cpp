@@ -515,6 +515,8 @@ private:
     	hdr->texH    = texH_;
     	hdr->fontW   = cellW_;
     	hdr->fontH   = cellH_;
+    	hdr->fontBaseW = fontW_;
+    	hdr->fontBaseH = fontW_;
     	TexChFontInfo*	fontInfo = reinterpret_cast<TexChFontInfo*>( &buf[ sizeof(TexChFontInfoHeader) ] );
     	for (unsigned i = 0; i < fonts_.size(); ++i) {
     	    Font const&    s = fonts_[i];
