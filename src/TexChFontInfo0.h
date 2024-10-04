@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-typedef struct TexChFontInfoHeader {
+typedef struct TexChFontInfoHeader0 {
     unsigned	    id;
     unsigned	    chCount;
     unsigned short  texW;
@@ -21,38 +21,39 @@ typedef struct TexChFontInfoHeader {
     unsigned	    texChH() const { return texH / fontH; }
     unsigned	    texPageChSize() const { return texChW() * texChH(); }
     unsigned	    texPageSize() const { unsigned n = texPageChSize(); return (chCount + n - 1) / n; }
+    void    	    setFontBaseWH(unsigned w, unsigned h) { /*dummy*/ }
   #endif
-} TexChFontInfoHeader;
+} TexChFontInfoHeader0;
 
-typedef struct TexChFontInfo {
+typedef struct TexChFontInfo0 {
     unsigned	    code;
     unsigned	    index;
     unsigned short  x;
     unsigned short  y;
     unsigned short  w;
     unsigned short  h;
-} TexChFontInfo;
+} TexChFontInfo0;
 
 #ifdef __cplusplus
 } //extern "C"
 #endif
 
 #ifdef __cplusplus
-class TexChFontInfoTable {
+class TexChFontInfoTable0 {
 public:
-    TexChFontInfoHeader const*	header() const { return (TexChFontInfoHeader const*)this; }
+    TexChFontInfoHeader0 const* header() const { return (TexChFontInfoHeader0 const*)this; }
     unsigned	    	    	infoSize() const { return header()->chCount; }
-    TexChFontInfo   	const*	infoTop() const { return (TexChFontInfo const*)((unsigned char const*)header() + sizeof(TexChFontInfoHeader)); }
-    TexChFontInfo   	const&	infoIdx(unsigned idx) const { assert(idx < header()->chCount); return infoTop()[idx]; }
+    TexChFontInfo0  	const*	infoTop() const { return (TexChFontInfo0 const*)((unsigned char const*)header() + sizeof(TexChFontInfoHeader0)); }
+    TexChFontInfo0  	const&	infoIdx(unsigned idx) const { assert(idx < header()->chCount); return infoTop()[idx]; }
 
-    TexChFontInfo   	const*	searchCharCode(unsigned charCode) const {
+    TexChFontInfo0  	const*	searchCharCode(unsigned charCode) const {
     	unsigned high = infoSize();
     	if (high) {
-    	    TexChFontInfo const* tbl = infoTop();
+    	    TexChFontInfo0 const* tbl = infoTop();
     	    unsigned	low = 0;
     	    while (low < high) {
     	    	unsigned mid = (low + high - 1) / 2;
-    	    	TexChFontInfo const* midp = &tbl[mid];
+    	    	TexChFontInfo0 const* midp = &tbl[mid];
     	    	unsigned midCode = midp->code;
     	    	if (charCode < midCode)
     	    	    high = mid;
@@ -66,10 +67,10 @@ public:
     }
 
     bool charCodeToPageUVWH(unsigned charCode, unsigned& rPage, unsigned& rU, unsigned& rV, unsigned& rW, unsigned& rH) const {
-    	TexChFontInfo const* fnd = searchCharCode(charCode);
+    	TexChFontInfo0 const* fnd = searchCharCode(charCode);
     	if (!fnd)
     	    return false;
-    	TexChFontInfoHeader const* hdr = header();
+    	TexChFontInfoHeader0 const* hdr = header();
     	unsigned texChW     = hdr->texChW();
     	unsigned texChH     = hdr->texChH();
     	unsigned pageChSize = texChW * texChH;

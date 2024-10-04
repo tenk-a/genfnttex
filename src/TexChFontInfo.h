@@ -24,6 +24,7 @@ typedef struct TexChFontInfoHeader {
     unsigned	    texChH() const { return texH / fontH; }
     unsigned	    texPageChSize() const { return texChW() * texChH(); }
     unsigned	    texPageSize() const { unsigned n = texPageChSize(); return (chCount + n - 1) / n; }
+    void    	    setFontBaseWH(unsigned w, unsigned h) { fontBaseW = w, fontBaseH = h; }
   #endif
 } TexChFontInfoHeader;
 
@@ -46,6 +47,13 @@ typedef struct TexChFontInfoHeader0 {
     unsigned short  texH;
     unsigned short  fontW;
     unsigned short  fontH;
+  #ifdef __cplusplus
+    unsigned	    texChW() const { return texW / fontW; }
+    unsigned	    texChH() const { return texH / fontH; }
+    unsigned	    texPageChSize() const { return texChW() * texChH(); }
+    unsigned	    texPageSize() const { unsigned n = texPageChSize(); return (chCount + n - 1) / n; }
+    void    	    setFontBaseWH(unsigned w, unsigned h) { /* dummy */ }
+  #endif
 } TexChFontInfoHeader0;
 
 typedef struct TexChFontInfo0 {

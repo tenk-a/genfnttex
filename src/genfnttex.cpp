@@ -156,12 +156,12 @@ private:
     	    tblname_ = p;
     	} else if (paramEquLong(p, "-ts", p)) {
     	    texW_ = (int)strtoul(p, (char**)&p, 0);
-    	    if (rangeCheck(texW_, 64, 0x10000, arg) == false)
+    	    if (rangeCheck(texW_, 2, 0x10000, arg) == false)
     	    	return false;
     	    if (*p) {
     	    	++p;
     	    	texH_ = (int)strtoul(p, (char**)&p, 0);
-    	    	if (rangeCheck(texH_, 64, 0x10000, "-ts?:") == false)
+    	    	if (rangeCheck(texH_, 2, 0x10000, "-ts?:") == false)
     	    	    return false;
     	    }
     	} else if (paramEquLong(p, "-fs", p)) {
@@ -515,8 +515,7 @@ private:
     	hdr->texH    = texH_;
     	hdr->fontW   = cellW_;
     	hdr->fontH   = cellH_;
-    	hdr->fontBaseW = fontW_;
-    	hdr->fontBaseH = fontW_;
+    	hdr->setFontBaseWH(fontW_, fontW_);	// base w * w (not h)
     	TexChFontInfo*	fontInfo = reinterpret_cast<TexChFontInfo*>( &buf[ sizeof(TexChFontInfoHeader) ] );
     	for (unsigned i = 0; i < fonts_.size(); ++i) {
     	    Font const&    s = fonts_[i];
