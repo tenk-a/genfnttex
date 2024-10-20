@@ -2,7 +2,14 @@ setlocal
 pushd %~dp0
 
 call :init
-set "OPT=%OPT% -cluttype=1:0x80 -resizemode=1 -addascii -bpp4"
+set "OPT=%OPT% -cluttype=1:0x80 -resizemode=2 -addascii -bpp4"
+
+:: Noto
+set Sub=Sans
+::set Sub=Serif
+set "TTFNAME=Noto %Sub%"
+set baseNm=2Noto-%Sub%
+call :convSizes
 
 :: M+
 set weight=light
@@ -11,14 +18,7 @@ set weight=light
 ::set weight=medium
 ::set weight=black
 set "TTFNAME=M+ 1c %weight%"
-set baseNm=0mplus1c-%weight%
-call :convSizes
-
-:: Noto
-set Sub=Sans
-set Sub=Serif
-set "TTFNAME=Noto %Sub%"
-set baseNm=Noto-%Sub%
+set baseNm=2mplus1c-%weight%
 call :convSizes
 
 goto END
