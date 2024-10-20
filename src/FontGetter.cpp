@@ -13,11 +13,34 @@
 #include "TexChFontInfo.h"
 
 
+void Font::getPara(TexChFontInfo& dst) const
+{
+	dst.x	= this->x;
+	dst.y	= this->y;
+	dst.w	= this->w;
+	dst.h	= this->h;
+	dst.ox	= this->ox;
+	dst.oy	= this->oy;
+}
 
-FontGetter::FontGetter(char const* ttfname, unsigned fontW, unsigned cellW, unsigned cellH
-						, unsigned mul, unsigned bpp, unsigned weight, bool italic)
-    : ttfname_(strdup(ttfname ? ttfname : ""))
+void Font::getPara(TexChFontInfo0& dst) const
+{
+	dst.x	= this->x;
+	dst.y	= this->y;
+	dst.w	= this->w;
+	dst.h	= this->h;
+}
+
+
+FontGetter::FontGetter(char const* ttfname
+			, unsigned fontW,  unsigned fontH
+			, unsigned cellW,  unsigned cellH
+			, unsigned mul,    unsigned bpp
+			, unsigned weight, bool     italic
+			, unsigned resizeMode
+) :   ttfname_(strdup(ttfname ? ttfname : ""))
     , fontW_(fontW)
+    , fontH_(fontH)
     , cellW_(cellW)
     , cellH_(cellH)
     , mul_(mul)
@@ -25,6 +48,7 @@ FontGetter::FontGetter(char const* ttfname, unsigned fontW, unsigned cellW, unsi
     , tone_(1 << bpp)
     , weight_(weight)	// 0..9
     , italic_(italic)
+    , resizeMode_(uint8_t(resizeMode))
 {
     assert(1 <= bpp && bpp <= 8);
     if (mul_ == 0)
@@ -69,9 +93,15 @@ bool FontGetter::get(FontVec& rFonts) {
     HDC     hdc     	= ::CreateCompatibleDC(NULL);
     HFONT   old_hfont	= (HFONT)::SelectObject( hdc, new_hfont );
 
+    TEXTMETRIC	tm  	= {0};
+    ::GetTextMetricsW( hdc, &tm );
+
     for (unsigned no = 0; no < rFonts.size(); ++no) {
     	rFonts[no].data.resize(cellW_ * cellH_);
-    	getFont(hdc, rFonts[no]);
+		if (resizeMode_ <= 1)
+    		getFontResizeMode1(hdc, tm, rFonts[no]);
+    	else
+    		getFontResizeMode2(hdc, tm, rFonts[no]);
     	adjustFontSize(rFonts[no]);
     }
 
@@ -86,17 +116,15 @@ bool FontGetter::get(FontVec& rFonts) {
 
 /** get font data
  */
-bool FontGetter::getFont(void* hdc0, Font& font) {
+bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font& font) {
     HDC     	hdc 	= (HDC)hdc0;
     UINT    	nChar	= font.ch;
-    TEXTMETRIC	tm  	= {0};
-    ::GetTextMetrics( hdc, &tm );
     static MAT2 const mat2 = {
     	{ 0, 1, }, { 0, 0, },
     	{ 0, 0, }, { 0, 1, }
     };
     GLYPHMETRICS    gm = {0};
-    DWORD size	= ::GetGlyphOutline(
+    DWORD size	= ::GetGlyphOutlineW(
     	hdc,	    	    // デバイスコンテキスト
     	nChar,	    	    // 処理したい文字の整数値（１文字の）
     	GGO_GRAY8_BITMAP,   // 取得するデータのフォーマット
@@ -104,16 +132,15 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     	0,  	    	    // 取得するバッファのサイズ
     	NULL,	    	    // 取得するバッファ（領域作成済み）
     	&mat2 );    	    // 文字への行列データ
-    wkBuf_.clear();
-    wkBuf_.resize(size);
     if (!size)
     	return false;
-    int rc = ::GetGlyphOutline( hdc, nChar, GGO_GRAY8_BITMAP, &gm, size, (LPVOID)&wkBuf_[0], &mat2 );
+    glyphOutlineBuf_.clear();
+    glyphOutlineBuf_.resize(size);
+    int rc = ::GetGlyphOutlineW( hdc, nChar, GGO_GRAY8_BITMAP
+    				, &gm, size, (LPVOID)&glyphOutlineBuf_[0], &mat2 );
     if(rc <= 0) {
     	return false;
     }
-
-    rc = ::GetTextMetrics( hdc, &tm );
 
     int pitch	    = (gm.gmBlackBoxX + 3) & ~3;
 
@@ -122,7 +149,7 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     int offset_x    = gm.gmptGlyphOrigin.x;
     int offset_y    = tm.tmAscent - gm.gmptGlyphOrigin.y;
     if (tm.tmInternalLeading != 0) {
-    	offset_y    = offset_y - tm.tmDescent;
+    	offset_y    = offset_y - tm.tmInternalLeading; //tm.tmDescent;
     }
     int ox = 0;
     int oy = 0;
@@ -168,7 +195,7 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
 		}
     	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellH_ && j < fontH; ++j ) {
     	    for ( unsigned i = 0 ; i < unsigned(dw) && i < cellW_ && i < fontW; ++i ) {
-    	    	unsigned alp  = wkBuf_[j * pitch + i];
+    	    	unsigned alp  = glyphOutlineBuf_[j * pitch + i];
     	    	alp   = (alp * (tone_-1) ) / 64;
     	    	font.data[((j+offset_y) * cellW_) + (i + offset_x)]   = alp;
     	    }
@@ -184,7 +211,7 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     	    	unsigned total = 0;
     	    	for(unsigned y = 0 ; y < mul_ && y+(j*mul_) < gm.gmBlackBoxY ; ++y) {
     	    	    for(unsigned x = 0 ; x < mul_ && x+(i*mul_) < gm.gmBlackBoxX ; ++x) {
-    	    	    	uint8_t alp = wkBuf_[ (y + j * mul_) * pitch + (x + i * mul_) ];
+    	    	    	uint8_t alp = glyphOutlineBuf_[ (y + j * mul_) * pitch + (x + i * mul_) ];
     	    	    	total  += alp;
     	    	    }
     	    	}
@@ -192,6 +219,118 @@ bool FontGetter::getFont(void* hdc0, Font& font) {
     	    }
     	}
     }
+    return true;
+}
+
+/** get font data
+ */
+bool FontGetter::getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font& font) {
+    HDC     	hdc 	= (HDC)hdc0;
+    UINT    	nChar	= font.ch;
+    static MAT2 const mat2 = {
+    	{ 0, 1, }, { 0, 0, },
+    	{ 0, 0, }, { 0, 1, }
+    };
+
+    GLYPHMETRICS    gm = {0};
+    DWORD size	= ::GetGlyphOutlineW(
+    	hdc,	    	    // デバイスコンテキスト
+    	nChar,	    	    // 処理したい文字の整数値（１文字の）
+    	GGO_GRAY8_BITMAP,   // 取得するデータのフォーマット
+    	&gm,	    	    // GLYPHMETRICS構造体へのアドレス
+    	0,  	    	    // 取得するバッファのサイズ
+    	NULL,	    	    // 取得するバッファ（領域作成済み）
+    	&mat2 );    	    // 文字への行列データ
+    if (!size)
+    	return false;
+
+    glyphOutlineBuf_.clear();
+    glyphOutlineBuf_.resize(size);
+    int rc = ::GetGlyphOutlineW( hdc, nChar, GGO_GRAY8_BITMAP, &gm, size, (LPVOID)&glyphOutlineBuf_[0], &mat2 );
+    if(rc <= 0) {
+    	return false;
+    }
+
+	// GLAY8 は 0..64 の 65 段階. それを 0..255 に調整.
+	for (unsigned i = 0; i < size; ++i) {
+		unsigned c = glyphOutlineBuf_[i] * 255U / 64U;
+		if (c > 255)	// 念の為.
+			c = 255;
+		glyphOutlineBuf_[i] = c;
+	}
+    unsigned srcWm  	= unsigned(gm.gmBlackBoxX);
+    unsigned srcHm  	= unsigned(gm.gmBlackBoxY);
+	unsigned cellWm	= unsigned(gm.gmCellIncX);
+	if (cellWm < srcWm)
+		cellWm = srcWm;
+	unsigned cellHm	= unsigned(tm.tmHeight);
+	if (cellHm < srcHm)
+		cellHm = srcHm;
+
+    int tgtXm	= gm.gmptGlyphOrigin.x;
+    if (tgtXm < 0) tgtXm = 0;
+	if (tgtXm + int(srcWm) > int(cellWm))
+		tgtXm = cellWm - srcWm;
+
+    int tgtYm	= tm.tmAscent - gm.gmptGlyphOrigin.y;
+    if (tm.tmInternalLeading != 0) {
+    	tgtYm   = tgtYm - tm.tmInternalLeading;
+    }
+
+    if (tgtYm < 0) tgtYm = 0;
+	if (tgtYm + int(srcHm) > int(cellHm))
+		tgtYm = cellHm - srcHm;
+
+	unsigned fontW = fontW_;
+	unsigned fontH = fontH_;
+
+	unsigned m  = mul_;
+	unsigned tgtW = (srcWm + m - 1) / m;
+	unsigned tgtH = (srcHm + m - 1) / m;
+	if (tgtW > fontW)
+		tgtW = fontW;
+	if (tgtH > fontH)
+		tgtH = fontH;
+
+    int      tgtX = tgtXm / m;
+	int      tgtY = tgtYm / m;
+    if (tgtX + int(tgtW) > int(fontW)-1) {
+		tgtX = fontW - tgtW;
+	} else if (tgtX + tgtW + tgtX < fontW) {
+		int dif = fontW - (tgtX + tgtW + tgtX);
+		tgtX += dif / 2;
+	}
+    if (tgtX < 0) tgtX = 0;
+
+    if (tgtY + int(tgtH) > int(fontH)-1)
+		tgtY = fontH - tgtH;
+    if (tgtY < 0) tgtY = 0;
+
+
+	font.ox = tgtX;
+	font.oy = tgtY;
+
+	unsigned tone	= tone_;
+	if (tone == 0)
+		tone = 256;
+ #if 1
+	if (m == 1 && (cellWm <= fontW && cellHm <= fontH)) {
+        unsigned pitch	= (tgtW + 3) & ~3;
+		for ( unsigned j = 0; j < unsigned(srcHm); ++j ) {
+		    for ( unsigned i = 0; i < unsigned(srcWm); ++i ) {
+		    	unsigned a = glyphOutlineBuf_[j * pitch + i];
+    	    	a   = (a * (tone-1)) / 255U;
+				font.data[(tgtY + j) * fontW + (tgtX + i)] = a;
+		    }
+		}
+	} else
+ #endif
+	{
+	    uint8_t* dst	= &font.data[tgtY*fontW+tgtX];
+	    unsigned pitch	= (srcWm + 3) & ~3;
+		resizeBilinearReduc(dst, tgtW, tgtH, fontW, &glyphOutlineBuf_[0], srcWm, srcHm, pitch, tone);
+	}
+
     return true;
 }
 
@@ -289,20 +428,101 @@ void FontGetter::printFontInfo() {
 
 
 
-void Font::getPara(TexChFontInfo& dst) const
-{
-	dst.x	= this->x;
-	dst.y	= this->y;
-	dst.w	= this->w;
-	dst.h	= this->h;
-	dst.ox	= this->ox;
-	dst.oy	= this->oy;
-}
+// from https://github.com/tenk-a/bmptg/blob/master/src/Proc/pix32_resizeBilinear.c
 
-void Font::getPara(TexChFontInfo0& dst) const
+#define USE_SUM_I64
+#ifdef USE_SUM_I64
+typedef int64_t         sum_t;
+#define DBL_TO_SUM(x)   (sum_t)((x) * 4096.0)
+#else
+typedef double          sum_t;
+#define DBL_TO_SUM(x)   (x)
+#endif
+#define CALC_WEI(d)     (((d) < 1.f) ? (((d) - 2.0)*(d)*(d) + 1.0) : (((-(d) + 5.0)*(d) - 8.0)*(d) + 4.0))  // a=-1
+
+/** Bilinear 拡大縮小
+ */
+void  FontGetter::resizeBilinearReduc( uint8_t* dst, unsigned dstW, unsigned dstH, unsigned dstPitch
+								,uint8_t const* src, unsigned srcW, unsigned srcH, unsigned srcPitch
+								, unsigned tone)
 {
-	dst.x	= this->x;
-	dst.y	= this->y;
-	dst.w	= this->w;
-	dst.h	= this->h;
+    // 拡大したあと 整数倍で縮小するための整数倍率を求める.
+    double rscaleX  = (double)srcW / dstW;
+    double rscaleY  = (double)srcH / dstH;
+    double mw       = (rscaleX <= 1.0) ? 1 : (int)rscaleX + 1;
+    double mh       = (rscaleY <= 1.0) ? 1 : (int)rscaleY + 1;
+    double mrscaleX = rscaleX / mw;
+    double mrscaleY = rscaleY / mh;
+    int	   scaleType= (mrscaleX == 1.0) * 2 + (mrscaleY == 1.0);
+    double const R = 0.5;
+
+    for (uint32_t dstY = 0; dstY < dstH; ++dstY) {
+        for (uint32_t dstX = 0; dstX < dstW; ++dstX) {
+            sum_t a = 0;
+            sum_t wei_total = 0;
+            for (double my = dstY*mh; my < (dstY+1)*mh; ++my) {
+                for (double mx = dstX*mw; mx < (dstX+1)*mw; ++mx) {
+                    double x0 = (mx + 0.5) * mrscaleX;
+                    double y0 = (my + 0.5) * mrscaleY;
+                    int    x1 = (int)(x0 - R);
+                    int    x2 = (int)(x0 + R);
+                    int    y1 = (int)(y0 - R);
+                    int    y2 = (int)(y0 + R);
+                    int    x, y;
+
+                    if (x1 < 0)
+                        x1 = 0;
+                    if (x2 >= (int)srcW)
+                        x2 = srcW - 1;
+                    if (y1 < 0)
+                        y1 = 0;
+                    if (y2 >= (int)srcH)
+                        y2 = srcH - 1;
+
+                    if (scaleType == 0) {   // (rscaleX != 1.0 && rscaleY != 1.0)
+                        for (y = y1; y <= y2; ++y) {
+                            for (x = x1; x <= x2; ++x) {
+                                uint32_t c    = src[y * srcPitch + x];
+                                double   lenX = fabs((x + 0.5) - x0);
+                                double   lenY = fabs((y + 0.5) - y0);
+                                double   weiX = CALC_WEI(lenX);
+                                double   weiY = CALC_WEI(lenY);
+                                sum_t    wei  = DBL_TO_SUM( weiX * weiY );
+
+                                wei_total += wei;
+                                a += c * wei;
+                            }
+                        }
+                    } else if (scaleType == 1) { // (rscaleX != 1.0 && rscaleY == 1.0)
+                        y = (int)my; //y0;
+                        for (x = x1; x <= x2; ++x) {
+                            uint32_t c    = src[y * srcPitch + x];
+                            double   lenX = fabs((x + 0.5) - x0);
+                            sum_t    wei  = DBL_TO_SUM( CALC_WEI(lenX) );
+
+                            wei_total += wei;
+                            a += c * wei;
+                        }
+                    } else {    // (scaleType == 2) // (rscaleX == 1.0 && rscaleY != 1.0)
+                        x = (int)mx; //x0;
+                        for (y = y1; y <= y2; ++y) {
+                            uint32_t c    = src[y * srcPitch + x];
+                            double   lenY = fabs((y + 0.5) - y0);
+                            sum_t    wei  = DBL_TO_SUM( CALC_WEI(lenY) );
+
+                            wei_total += wei;
+                            a += c * wei;
+                        }
+                    }
+                }
+            }
+
+            a /= wei_total;
+            uint32_t ia = uint32_t(a);
+            if (ia > 255U)
+            	ia = 255U;
+			ia = ia * (tone-1) / 255U;
+            dst[dstY*dstPitch + dstX] = uint8_t(ia);
+        }
+    }
 }

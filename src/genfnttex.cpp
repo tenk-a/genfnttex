@@ -30,6 +30,7 @@ public:
     	, texW_(2048)
     	, texH_(2048)
     	, fontW_(0)
+    	, fontH_(0)
     	, cellW_(0)
     	, cellH_(0)
     	, texChW_(0)
@@ -42,9 +43,11 @@ public:
     	, italic_(false)
     	, weight_(0)
     	, tbltype_(1)
+    	, mulResizeMode_(1)
+    	, clutType_(0)
+        , clutValOfs_(0)
     	, binId_(TEX_FONT_INFO_ID)
     {
-    	makeClut();
     	//mbs_setEnv("ja_JP.UTF-8");
     }
 
@@ -83,8 +86,9 @@ public:
     	}
     	if (oname_ == NULL)
     	    return 0;
-    	if (optsSetting() == false)
+        if (optsSetting() == false)
     	    return 1;
+    	makeClut();
     	if (getFonts() == false)
     	    return 1;
     	if (makeTex() == false)
@@ -129,7 +133,9 @@ private:
     	   " -bpp[N]         bit per pixel. N=1..8\n"
     	   " -addascii       generate 0x21..0x7E\n"
     	   " -addspc         genetate space(0x20)\n"
-		   " -weight=[N]     1-9:weight(5:standard) 0:default\n"
+		   " -weight[N]      1-9:weight(5:standard) 0:default\n"
+    	   " -resizemode[N]  mul->resize mode N=1..2\n"
+    	   " -cluttype[N]    0:alpha  1:pixel\n"
 		   " -italic         italic\n"
     	   " -fontlist       output font name list\n"
     	   " -binid=[N]      .bin id (top 4bytes integer)\n"
@@ -140,21 +146,15 @@ private:
 
     bool scanOpts(char* arg) {
     	char* p = arg;
-    	if (paramEquLong(p, "-ttf", p)) {
-    	    if (*p == '=')
-    	    	++p;
+    	if (checkOpt(p, "-ttf", p)) {
     	    ttfname_ = p;
-    	} else if (paramEquLong(p, "-oldtable", p)) {
+    	} else if (checkOpt(p, "-oldtable", p)) {
     	    tbltype_ = (*p == '-');
-    	} else if (paramEquLong(p, "-o", p)) {
-    	    if (*p == '=')
-    	    	++p;
+    	} else if (checkOpt(p, "-o", p)) {
     	    oname_ = p;
-    	} else if (paramEquLong(p, "-tblname", p)) {
-    	    if (*p == '=')
-    	    	++p;
+    	} else if (checkOpt(p, "-tblname", p)) {
     	    tblname_ = p;
-    	} else if (paramEquLong(p, "-ts", p)) {
+    	} else if (checkOpt(p, "-ts", p)) {
     	    texW_ = (int)strtoul(p, (char**)&p, 0);
     	    if (rangeCheck(texW_, 2, 0x10000, arg) == false)
     	    	return false;
@@ -164,11 +164,19 @@ private:
     	    	if (rangeCheck(texH_, 2, 0x10000, "-ts?:") == false)
     	    	    return false;
     	    }
-    	} else if (paramEquLong(p, "-fs", p)) {
+    	} else if (checkOpt(p, "-fs", p)) {
     	    fontW_ = (int)strtoul(p, (char**)&p, 0);
     	    if (rangeCheck(fontW_, 4, 2048, arg) == false)
     	    	return false;
-    	} else if (paramEquLong(p, "-cs", p)) {
+			if (*p != '\0') {
+				++p;
+				fontH_ = (int)strtoul(p, (char**)&p, 0);
+	    	    if (rangeCheck(fontH_, 4, 2048, arg) == false)
+	    	    	return false;
+			}
+    	    if (fontH_ == 0)
+    	    	fontH_ = fontW_;
+    	} else if (checkOpt(p, "-cs", p)) {
     	    cellW_ = (int)strtoul(p, (char**)&p, 0);
     	    if (rangeCheck(cellW_, 4, 2048, arg) == false)
     	    	return false;
@@ -180,32 +188,38 @@ private:
 			}
     	    if (cellH_ == 0)
     	    	cellH_ = cellW_;
-    	} else if (paramEquLong(p, "-mul", p)) {
+    	} else if (checkOpt(p, "-mul", p)) {
     	    mul_ = (int)strtoul(p, (char**)&p, 0);
-    	    if (rangeCheck(cellW_, 1, 256, arg) == false)
+    	    if (rangeCheck(mul_, 1, 256, arg) == false)
     	    	return false;
-    	} else if (paramEquLong(p, "-bpp=", p) || paramEquLong(p, "-bpp" , p) ) {
+    	} else if (checkOpt(p, "-bpp", p)) {
     	    bpp_ = (int)strtoul(p, (char**)&p, 0);
     	    if (rangeCheck(bpp_, 1, 8, arg) == false)
     	    	return false;
-    	} else if (paramEquLong(p, "-addascii", p)) {
+    	} else if (checkOpt(p, "-addascii", p)) {
     	    addascii_	= (*p != '-');
-    	} else if (paramEquLong(p, "-addspc", p)) {
+    	} else if (checkOpt(p, "-addspc", p)) {
     	    addspc_ 	= (*p != '-');
-    	} else if (paramEquLong(p, "-addcr", p)) {
+    	} else if (checkOpt(p, "-addcr", p)) {
     	    addcr_  	= (*p != '-');
-    	} else if (paramEquLong(p, "-fontlist", p)) {
+    	} else if (checkOpt(p, "-fontlist", p)) {
     	    FontGetter::printFontInfo();
-    	} else if (paramEquLong(p, "-weight", p)) {
-    	    if (*p == '=')
-    	    	++p;
+    	} else if (checkOpt(p, "-weight", p)) {
     	    weight_	= (unsigned)strtoul(p, (char**)&p, 0);
     	    if (rangeCheck(weight_, 0, 9, arg) == false)
     	    	return false;
-    	} else if (paramEquLong(p, "-italic", p)) {
+    	} else if (checkOpt(p, "-italic", p)) {
     	    italic_	= (*p != '-');
-    	} else if (paramEquLong(p, "-binid=", p)) {
+    	} else if (checkOpt(p, "-binid", p)) {
 			binId_	= (unsigned)strtoul(p, (char**)&p, 0);
+    	} else if (checkOpt(p, "-resizemode", p)) {
+    	    mulResizeMode_ = (unsigned)strtoul(p, (char**)&p, 0);
+    	} else if (checkOpt(p, "-cluttype", p)) {
+    	    clutType_ = (unsigned)strtoul(p, (char**)&p, 0);
+			if (*p != '\0') {
+				++p;
+				clutValOfs_ = strtoul(p, (char**)&p, 0);
+			}
     	} else {
     	    fprintf(stderr, "unkown option : %s\n", arg);
     	    return false;
@@ -213,14 +227,16 @@ private:
     	return true;
     }
 
-    bool paramEquLong(char const* s, char const* t, char* &result_s) {
-    	return paramEquLong(s, t, (char const* &)result_s);
+    bool checkOpt(char const* s, char const* t, char* &result_s) {
+    	return checkOpt(s, t, (char const* &)result_s);
     }
 
-    bool paramEquLong(char const* s, char const* t, char const* &result_s) {
+    bool checkOpt(char const* s, char const* t, char const* &result_s) {
     	size_t tlen = strlen(t);
     	if (strncmp(s, t, tlen) == 0) {
     	    s += tlen;
+			if (*s == '=')
+				++s;
     	    result_s = s;
     	    return true;
     	}
@@ -253,6 +269,8 @@ private:
     	}
 		if (cellH_ == 0)
 			cellH_ = cellW_;
+    	if (fontH_ == 0)
+    		fontH_ = fontW_;
 
     	if (!tblname_) {
     	    _snprintf(tblNameBuf_, sizeof(tblNameBuf_), "g_chFontTable_%s", oname_);
@@ -311,8 +329,12 @@ private:
     	    fonts_[no].ch = ite->second;
     	    ++no;
     	}
+		unsigned mulResizeMode = mulResizeMode_;
+		if (fontW_ != fontH_)
+			mulResizeMode = 2;
 
-    	FontGetter fontGetter(ttfname_, fontW_, cellW_, cellH_, mul_, bpp_, weight_, italic_);
+    	FontGetter fontGetter(ttfname_, fontW_, fontH_, cellW_, cellH_, mul_
+    						, bpp_, weight_, italic_, mulResizeMode);
     	fontGetter.get(fonts_);
     	return true;
     }
@@ -567,8 +589,13 @@ private:
     	memset(clut_, 0, sizeof clut_);
     	unsigned tone = 1 << bpp_;
     	for (unsigned i = 1; i < tone; ++i) {
-    	    unsigned a = i * 255 / (tone-1);
-    	    clut_[i] = (a << 24) | 0xffffff;
+    	    if (clutType_ == 0) {
+        	    unsigned a = i * 255 / (tone-1);
+	    	    clut_[i] = (a << 24) | 0xffffff;
+	    	} else {
+        	    unsigned a = clutValOfs_ + i * (255 - clutValOfs_) / (tone-1);
+	    	    clut_[i] = (0xff << 24) | (a << 16) | (a << 8) | a;
+			}
     	}
     }
 
@@ -582,13 +609,16 @@ private:
     unsigned	texW_;
     unsigned	texH_;
     unsigned	fontW_;
-    //int   	fontH_;
+    unsigned	fontH_;
     unsigned	cellW_;
  	unsigned   	cellH_;
     unsigned	texChW_;
     unsigned	texChH_;
     unsigned	mul_;
     unsigned	bpp_;
+    unsigned    mulResizeMode_;
+    unsigned    clutType_;
+    unsigned    clutValOfs_;
     bool    	addascii_;
 	bool		addspc_;
 	bool		addcr_;

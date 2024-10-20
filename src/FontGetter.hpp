@@ -36,7 +36,13 @@ typedef std::vector<Font>   FontVec;
 
 class FontGetter {
 public:
-    FontGetter(char const* ttfname, unsigned fontW, unsigned cellW, unsigned cellH, unsigned mul, unsigned bpp, unsigned weight, bool italic);
+    FontGetter(char const* ttfname
+    			, unsigned fontW,  unsigned fontH
+    			, unsigned cellW,  unsigned cellH
+    			, unsigned mul,    unsigned bpp
+    			, unsigned weight, bool     italic
+    			, unsigned resizeMode
+    );
     ~FontGetter();
 
     bool get(FontVec& fonts);
@@ -44,12 +50,17 @@ public:
     static void printFontInfo();
 
 private:
-    bool getFont(void* hdc0, Font& font);
+    bool getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font& font);
+    bool getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font& font);
     bool adjustFontSize(Font& rFont);
+	static void   resizeBilinearReduc( uint8_t* dst, unsigned dstW, unsigned dstH, unsigned dstPitch
+								,uint8_t const* src, unsigned srcW, unsigned srcH, unsigned srcPitch
+								, unsigned tone);
 
 private:
     char*   	    	    ttfname_;
     unsigned	    	    fontW_;
+    unsigned	    	    fontH_;
     unsigned	    	    cellW_;
     unsigned	    	    cellH_;
     unsigned	    	    mul_;
@@ -57,7 +68,8 @@ private:
     unsigned	    	    tone_;
     unsigned				weight_;
     bool					italic_;
-    std::vector<uint8_t>    wkBuf_;
+    uint8_t					resizeMode_;
+    std::vector<uint8_t>    glyphOutlineBuf_;
 };
 
 #endif
