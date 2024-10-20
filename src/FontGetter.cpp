@@ -160,6 +160,7 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     int ox = 0;
     int oy = 0;
 
+	
     //if (offset_y < 0) {
     //	offset_y     = 0;
     //}
@@ -174,13 +175,13 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 	if (cellH_ > fontH_)
 		offset_y += (cellH_ - fontH_) / 2;
 
-    if (offset_x + dw > int(cellW_)) {
-		ox       = offset_x + dw - cellW_;
+    if (offset_x >= 0 && offset_x + dw > int(cellW_)) {
+		ox       = offset_x + int(dw) - int(cellW_);
     	offset_x = int(cellW_) - dw;
 		if (offset_x < 0)
 			offset_x = 0;
-	} else if (offset_x + dw + offset_x < int(cellW_)) {
-		int dif = cellW_ - (offset_x + dw + offset_x);
+	} else if (offset_x >= 0 && offset_x + dw + offset_x < int(cellW_)) {
+		int dif = int(cellW_) - int(offset_x + dw + offset_x);
 		offset_x += dif / 2;
 	}
 	if (offset_x < 0) {
@@ -188,8 +189,8 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     	offset_x = 0;
     }
 
-    if (offset_y + dh > int(cellH_)) {
-		oy       = offset_y + dh - cellH_;
+    if (offset_y >= 0 && offset_y + dh > int(cellH_)) {
+		oy       = offset_y + dh - int(cellH_);
     	offset_y = int(cellH_) - dh;
 		if (offset_y < 0)
 			offset_y = 0;
@@ -201,8 +202,8 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 	font.ox = ox;
 	font.oy = oy;
 
-	unsigned fontH = fontW_;
 	unsigned fontW = fontW_;
+	unsigned fontH = fontW_;
 
     if (mul_ == 1) {
 		if (fontW < pitch) {
@@ -232,7 +233,8 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     	    	    	total  += alp;
     	    	    }
     	    	}
-    	    	font.data[(j + offset_y) * cellW_ +  (i + offset_x)]  = (total * (tone_-1)) / (mul_ * mul_ * 64);
+    	    	total = (total * (tone_-1)) / (mul_ * mul_ * 64);
+    	    	font.data[(j + offset_y) * cellW_ +  (i + offset_x)]  = total;
     	    }
     	}
     }
@@ -275,8 +277,8 @@ bool FontGetter::getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 			c = 255;
 		glyphOutlineBuf_[i] = c;
 	}
-    unsigned srcWm  	= unsigned(gm.gmBlackBoxX);
-    unsigned srcHm  	= unsigned(gm.gmBlackBoxY);
+    unsigned srcWm  = unsigned(gm.gmBlackBoxX);
+    unsigned srcHm  = unsigned(gm.gmBlackBoxY);
 	unsigned cellWm	= unsigned(gm.gmCellIncX);
 	if (cellWm < srcWm)
 		cellWm = srcWm;
