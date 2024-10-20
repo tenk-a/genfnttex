@@ -16,11 +16,14 @@ usage>genfnttex [-opts] file(s)
  -mul[N]         縦横N倍サイズの文字フォントで取得し1/N する.
  -addascii       0x21..0x7E までのascii文字を入力した扱いにする
  -addspc         空白(0x20) を対象に加える
- -weight=N       N=0..9  0=default  1(細)..5(標準)..9(太)
+ -weight[N]      N=0..9  0=default  1(細)..5(標準)..9(太)
  -italic         イタリック(斜体)指定
  -fontlist       現在使えるフォントの一覧表示
+ -resizemode[N]  -mulした後の縮小方法の変更
+                 N=1:mulした分縮小 N=2:Bilinear拡縮.
+ -cluttype[N][:M] N=0 α値で階調の白色
+                   =1 白色で階調. (M=色値に下駄を履かす)
  -oldtable       旧テーブルで出力
-
 
 -o指定がなければ、最初の入力ファイル名の拡張子を除いた文字列が
 指定されたことになる。

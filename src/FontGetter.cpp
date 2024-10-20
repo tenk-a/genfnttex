@@ -168,10 +168,15 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     	offset_x = int(cellW_) - dw;
 		if (offset_x < 0)
 			offset_x = 0;
-    } else if (offset_x < 0) {
+	} else if (offset_x + dw + offset_x < int(cellW_)) {
+		int dif = cellW_ - (offset_x + dw + offset_x);
+		offset_x += dif / 2;
+	}
+	if (offset_x < 0) {
 		ox = offset_x;
     	offset_x = 0;
     }
+
     if (offset_y + dh > int(cellH_)) {
 		oy       = offset_y + dh - cellH_;
     	offset_y = int(cellH_) - dh;
@@ -187,6 +192,7 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 
 	unsigned fontH = fontW_;
 	unsigned fontW = fontW_;
+
     if (mul_ == 1) {
 		if (fontW < pitch) {
 			fontW = pitch;
@@ -284,6 +290,9 @@ bool FontGetter::getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 	unsigned fontW = fontW_;
 	unsigned fontH = fontH_;
 
+    int ox = 0;
+    int oy = 0;
+
 	unsigned m  = mul_;
 	unsigned tgtW = (srcWm + m - 1) / m;
 	unsigned tgtH = (srcHm + m - 1) / m;
@@ -295,20 +304,28 @@ bool FontGetter::getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     int      tgtX = tgtXm / m;
 	int      tgtY = tgtYm / m;
     if (tgtX + int(tgtW) > int(fontW)-1) {
+		ox   = tgtX + tgtW - fontW;
 		tgtX = fontW - tgtW;
 	} else if (tgtX + tgtW + tgtX < fontW) {
 		int dif = fontW - (tgtX + tgtW + tgtX);
 		tgtX += dif / 2;
 	}
-    if (tgtX < 0) tgtX = 0;
+    if (tgtX < 0) {
+		ox   = tgtX;
+		tgtX = 0;
+	}
 
-    if (tgtY + int(tgtH) > int(fontH)-1)
+    if (tgtY + int(tgtH) > int(fontH)-1) {
+		oy   = tgtY + tgtY - fontH;
 		tgtY = fontH - tgtH;
-    if (tgtY < 0) tgtY = 0;
+	}
+    if (tgtY < 0) {
+		oy   = tgtY;
+    	tgtY = 0;
+    }
 
-
-	font.ox = tgtX;
-	font.oy = tgtY;
+	font.ox = ox;
+	font.oy = oy;
 
 	unsigned tone	= tone_;
 	if (tone == 0)
