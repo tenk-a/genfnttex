@@ -53,6 +53,12 @@ FontGetter::FontGetter(char const* ttfname
     assert(1 <= bpp && bpp <= 8);
     if (mul_ == 0)
     	mul_ = 1;
+    if (fontH_ == 0)
+    	fontH_ = fontW;
+    if (cellW_ < fontW_)
+    	cellW_ = fontW_;
+    if (cellH_ < fontH_)
+    	cellH_ = fontH_;
 }
 
 FontGetter::~FontGetter() {
@@ -162,6 +168,11 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     dh	     = (dh+(mul_-1)) / mul_;
     offset_x = (offset_x) / mul_;
     offset_y = (offset_y) / mul_;
+
+	if (cellW_ > fontW_)
+		offset_x += (cellW_ - fontW_) / 2;
+	if (cellH_ > fontH_)
+		offset_y += (cellH_ - fontH_) / 2;
 
     if (offset_x + dw > int(cellW_)) {
 		ox       = offset_x + dw - cellW_;
@@ -289,6 +300,8 @@ bool FontGetter::getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 
 	unsigned fontW = fontW_;
 	unsigned fontH = fontH_;
+	unsigned cellW = cellW_;
+	unsigned cellH = cellH_;
 
     int ox = 0;
     int oy = 0;
@@ -303,11 +316,17 @@ bool FontGetter::getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 
     int      tgtX = tgtXm / m;
 	int      tgtY = tgtYm / m;
-    if (tgtX + int(tgtW) > int(fontW)-1) {
-		ox   = tgtX + tgtW - fontW;
-		tgtX = fontW - tgtW;
-	} else if (tgtX + tgtW + tgtX < fontW) {
-		int dif = fontW - (tgtX + tgtW + tgtX);
+
+	if (cellW > fontW)
+		tgtX += (cellW - fontW) / 2;
+	if (cellH > fontH)
+		tgtH += (cellH - fontH) / 2;
+
+    if (tgtX + int(tgtW) > int(cellW)-1) {
+		ox   = tgtX + tgtW - cellW;
+		tgtX = cellW - tgtW;
+	} else if (tgtX + int(tgtW) + tgtX < int(cellW)) {
+		int dif = cellW - (tgtX + tgtW + tgtX);
 		tgtX += dif / 2;
 	}
     if (tgtX < 0) {
@@ -315,9 +334,9 @@ bool FontGetter::getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 		tgtX = 0;
 	}
 
-    if (tgtY + int(tgtH) > int(fontH)-1) {
-		oy   = tgtY + tgtY - fontH;
-		tgtY = fontH - tgtH;
+    if (tgtY + int(tgtH) > int(cellH)-1) {
+		oy   = tgtY + tgtH - cellH;
+		tgtY = cellH - tgtH;
 	}
     if (tgtY < 0) {
 		oy   = tgtY;
@@ -337,15 +356,15 @@ bool FontGetter::getFontResizeMode2(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 		    for ( unsigned i = 0; i < unsigned(srcWm); ++i ) {
 		    	unsigned a = glyphOutlineBuf_[j * pitch + i];
     	    	a   = (a * (tone-1)) / 255U;
-				font.data[(tgtY + j) * fontW + (tgtX + i)] = a;
+				font.data[(tgtY + j) * cellW + (tgtX + i)] = a;
 		    }
 		}
 	} else
  #endif
 	{
-	    uint8_t* dst	= &font.data[tgtY*fontW+tgtX];
+	    uint8_t* dst	= &font.data[tgtY*cellW+tgtX];
 	    unsigned pitch	= (srcWm + 3) & ~3;
-		resizeBilinearReduc(dst, tgtW, tgtH, fontW, &glyphOutlineBuf_[0], srcWm, srcHm, pitch, tone);
+		resizeBilinearReduc(dst, tgtW, tgtH, cellW, &glyphOutlineBuf_[0], srcWm, srcHm, pitch, tone);
 	}
 
     return true;

@@ -71,7 +71,7 @@ public:
     	    	++fno;
     	    }
     	}
-    	if (fno == 0)
+    	if (fno == 0 && !addascii_)
     	    return 0;
 
     	for (int i = 1; i < argc; ++i) {
@@ -134,7 +134,7 @@ private:
     	   " -addascii       generate 0x21..0x7E\n"
     	   " -addspc         genetate space(0x20)\n"
 		   " -weight[N]      1-9:weight(5:standard) 0:default\n"
-    	   " -resizemode[N]  mul->resize mode N=1..2\n"
+    	   //" -resizemode[N]  mul->resize mode N=1..2\n"
     	   " -cluttype[N]    0:alpha  1:pixel\n"
 		   " -italic         italic\n"
     	   " -fontlist       output font name list\n"
