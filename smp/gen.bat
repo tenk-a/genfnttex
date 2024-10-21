@@ -2,17 +2,17 @@ setlocal
 pushd %~dp0
 
 call :init
-set RszMode=1
-set "OPT=%OPT% -mul3 -cluttype=1:0x80 -resizemode=%RszMode% -addascii -bpp4"
+set RszMode=2
+set "OPT=%OPT% -mul1 -cluttype=1:0x80 -resizemode=%RszMode% -addascii -bpp4"
 
-set Prefix=
-set Prefix=%RszMode%
+set Suffix=
+set Suffix=_rm%RszMode%
 
 :: Noto
 set Sub=Sans
 ::set Sub=Serif
 set "TTFNAME=Noto %Sub%"
-set baseNm=%Prefix%Noto-%Sub%
+set baseNm=%Prefix%Noto_%Sub%%Suffix%
 call :convSizes
 
 :: M+
@@ -22,7 +22,7 @@ set weight=light
 ::set weight=medium
 ::set weight=black
 set "TTFNAME=M+ 1c %weight%"
-set baseNm=%Prefix%mplus1c-%weight%
+set baseNm=mplus1c_%weight%%Suffix%
 call :convSizes
 
 goto END

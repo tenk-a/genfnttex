@@ -164,11 +164,21 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     //if (offset_y < 0) {
     //	offset_y     = 0;
     //}
+	unsigned fontW = fontW_;
+	unsigned fontH = fontH_;
+	unsigned cellW = cellW_;
+	unsigned cellH = cellH_;
+	unsigned mul   = mul_;
 
-    dw	     = (dw+(mul_-1)) / mul_;
-    dh	     = (dh+(mul_-1)) / mul_;
-    offset_x = (offset_x) / mul_;
-    offset_y = (offset_y) / mul_;
+    dw	     = (dw+(mul-1)) / mul;
+    dh	     = (dh+(mul-1)) / mul;
+    offset_x = (offset_x) / mul;
+    offset_y = (offset_y) / mul;
+
+	if (dw > cellW)
+		dw = cellW;
+	if (dh > cellH)
+		dh = cellH;
 
 	if (cellW_ > fontW_)
 		offset_x += (cellW_ - fontW_) / 2;
@@ -194,7 +204,8 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     	offset_y = int(cellH_) - dh;
 		if (offset_y < 0)
 			offset_y = 0;
-    } else if (offset_y < 0) {
+    }
+    if (offset_y < 0) {
 		oy = offset_y;
     	offset_y = 0;
     }
@@ -202,10 +213,7 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
 	font.ox = ox;
 	font.oy = oy;
 
-	unsigned fontW = fontW_;
-	unsigned fontH = fontW_;
-
-    if (mul_ == 1) {
+    if (mul == 1) {
 		if (fontW < pitch) {
 			fontW = pitch;
 			if (fontW > cellW_)
@@ -219,21 +227,21 @@ bool FontGetter::getFontResizeMode1(void* hdc0, struct tagTEXTMETRICW& tm, Font&
     	    }
     	}
     }else {
-		if (fontW < pitch/mul_) {
-			fontW = pitch/mul_;
+		if (fontW < pitch/mul) {
+			fontW = pitch/mul;
 			if (fontW > cellW_)
 				fontW = cellW_;
 		}
     	for ( unsigned j = 0 ; j < unsigned(dh) && j < cellH_ && j < fontH; ++j ) {
     	    for ( unsigned i = 0 ; i < unsigned(dw) && i < cellW_ && i < fontW; ++i ) {
     	    	unsigned total = 0;
-    	    	for(unsigned y = 0 ; y < mul_ && y+(j*mul_) < gm.gmBlackBoxY ; ++y) {
-    	    	    for(unsigned x = 0 ; x < mul_ && x+(i*mul_) < gm.gmBlackBoxX ; ++x) {
-    	    	    	uint8_t alp = glyphOutlineBuf_[ (y + j * mul_) * pitch + (x + i * mul_) ];
+    	    	for(unsigned y = 0 ; y < mul && y+(j*mul) < gm.gmBlackBoxY ; ++y) {
+    	    	    for(unsigned x = 0 ; x < mul && x+(i*mul) < gm.gmBlackBoxX ; ++x) {
+    	    	    	uint8_t alp = glyphOutlineBuf_[ (y + j * mul) * pitch + (x + i * mul) ];
     	    	    	total  += alp;
     	    	    }
     	    	}
-    	    	total = (total * (tone_-1)) / (mul_ * mul_ * 64);
+    	    	total = (total * (tone_-1)) / (mul * mul * 64);
     	    	font.data[(j + offset_y) * cellW_ +  (i + offset_x)]  = total;
     	    }
     	}
